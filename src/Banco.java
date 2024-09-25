@@ -3,7 +3,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 // Clase que representa una cuenta bancaria
 class CuentaBancaria {
-    int saldo = 100; // Saldo inicial de la cuenta
+    int saldo = 100;
     private final Lock lock = new ReentrantLock(); // Lock para controlar el acceso a la cuenta
 
     // Método para retirar dinero de la cuenta
@@ -28,13 +28,13 @@ class CuentaBancaria {
 // Clase que representa un cliente que intenta retirar dinero
 class Cliente extends Thread {
     private final CuentaBancaria cuenta; // Referencia a la cuenta bancaria
-    private final int cantidad; // Cantidad que el cliente quiere retirar
-    private final int id; // Identificador único del cliente
+    private final int cantidad;
+    private final int id;
 
     public Cliente(CuentaBancaria cuenta, int cantidad, int id) {
-        this.cuenta = cuenta; // Inicializa la referencia a la cuenta
-        this.cantidad = cantidad; // Inicializa la cantidad a retirar
-        this.id = id; // Inicializa el identificador del cliente
+        this.cuenta = cuenta;
+        this.cantidad = cantidad;
+        this.id = id;
     }
 
     @Override
@@ -50,12 +50,12 @@ public class Banco {
         CuentaBancaria cuenta = new CuentaBancaria(); // Crear una nueva instancia de la cuenta bancaria
 
         // Crear dos clientes que intentan retirar dinero
-        Cliente cliente1 = new Cliente(cuenta, 80, 1); // Cliente que quiere retirar 80
-        Cliente cliente2 = new Cliente(cuenta, 70, 2); // Cliente que quiere retirar 70
+        Cliente cliente1 = new Cliente(cuenta, 80, 1);
+        Cliente cliente2 = new Cliente(cuenta, 70, 2);
 
         // Iniciar los hilos de los clientes
-        cliente1.start(); // Comienza el hilo del primer cliente
-        cliente2.start(); // Comienza el hilo del segundo cliente
+        cliente1.start();
+        cliente2.start();
 
         // Esperar a que ambos hilos terminen
         try {
@@ -65,7 +65,6 @@ public class Banco {
             e.printStackTrace(); // Maneja cualquier excepción de interrupción
         }
 
-        // Imprimir el saldo final después de las transacciones
         System.out.println("Fin de las transacciones. Saldo final: " + cuenta.saldo);
     }
 }
