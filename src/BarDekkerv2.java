@@ -1,6 +1,6 @@
 public class BarDekkerv2 implements Runnable {
-    private static int turno = 0;
-    private static boolean[] interesado = {false, false}; // Indica si los borrachos están interesados
+    private static volatile int turno = 0; // Volatile para la visibilidad
+    private static volatile boolean[] interesado = {false, false}; // Indica si los borrachos están interesados
 
     @Override
     public void run() {
@@ -16,9 +16,16 @@ public class BarDekkerv2 implements Runnable {
         while (true) {
             interesado[0] = true; // Borracho 1 muestra interés
 
-            // Espera si es el turno del otro borracho
-            while (interesado[1] && turno == 1) {
-                Thread.yield(); // Cede el control al sistema operativo
+            // Espera si es el turno del otro borracho y está interesado
+            while (interesado[1]) {
+                // Si es el turno del otro borracho, ceder
+                if (turno == 1) {
+                    interesado[0] = false; // Cede su interés
+                    while (turno == 1) {
+                        Thread.yield(); // Espera activa
+                    }
+                    interesado[0] = true; // Muestra interés nuevamente
+                }
             }
 
             // Sección crítica: usar el baño
@@ -34,9 +41,16 @@ public class BarDekkerv2 implements Runnable {
         while (true) {
             interesado[1] = true; // Borracho 2 muestra interés
 
-            // Espera si es el turno del otro borracho
-            while (interesado[0] && turno == 0) {
-                Thread.yield(); // Cede el control al sistema operativo
+            // Espera si es el turno del otro borracho y está interesado
+            while (interesado[0]) {
+                // Si es el turno del otro borracho, ceder
+                if (turno == 0) {
+                    interesado[1] = false; // Cede su interés
+                    while (turno == 0) {
+                        Thread.yield(); // Espera activa
+                    }
+                    interesado[1] = true; // Muestra interés nuevamente
+                }
             }
 
             // Sección crítica: usar el baño

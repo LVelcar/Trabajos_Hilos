@@ -20,14 +20,22 @@ public class BarDekkerv4 implements Runnable {
                 interesado[borrachoIndex] = true; // Recupera el interés
             }
 
-
             // Sección crítica
             usarBano(borrachoIndex + 1);
 
+            // Al salir, cede la prioridad
             turno = otro; // Cede la prioridad
             interesado[borrachoIndex] = false; // Sale de la sección crítica
+
+            // Opción para permitir un ligero retraso
+            try {
+                Thread.sleep(10); // Pequeño retraso antes de que el otro borracho intente acceder
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
         }
     }
+
 
     // Simulación de uso del baño
     private void usarBano(int borrachoId) {
