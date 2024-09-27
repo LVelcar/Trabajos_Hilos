@@ -1,59 +1,50 @@
-public class BarDekkerv4 {
-    private static boolean[] interesado = {false, false}; // Interés de los borrachos
-    private static int turno = 0; // Prioridad
+public class BarDekkerv4 implements Runnable {
+    private static boolean[] interesado = {false, false}; // Indica el interés de cada borracho
+    private static int turno = 0; // Variable de turno/prioridad
+    private int borrachoIndex; // Índice del borracho (0 o 1)
 
-    // Borracho 1 quiere usar el baño
-    public void borracho1() {
-        while (true) {
-            interesado[0] = true; // Borracho 1 muestra interés
-            while (interesado[1]) {
-                if (turno == 1) {
-                    interesado[0] = false; // Cede el turno
-                    while (turno == 1) {
-                        // Espera ocupada
-                    }
-                    interesado[0] = true; // Recupera el interés
-                }
-            }
-
-            // Sección crítica: usar el baño
-            usarBano(1);
-
-            turno = 1; // Da la prioridad al otro borracho
-            interesado[0] = false; // Sale de la sección crítica
-        }
+    public BarDekkerv4(int borrachoIndex) {
+        this.borrachoIndex = borrachoIndex;
     }
 
-    // Borracho 2 quiere usar el baño
-    public void borracho2() {
+    @Override
+    public void run() {
+        int otro = 1 - borrachoIndex; // Índice del otro borracho
         while (true) {
-            interesado[1] = true; // Borracho 2 muestra interés
-            while (interesado[0]) {
-                if (turno == 0) {
-                    interesado[1] = false; // Cede el turno
-                    while (turno == 0) {
-                        // Espera ocupada
-                    }
-                    interesado[1] = true; // Recupera el interés
+            interesado[borrachoIndex] = true; // Muestra interés
+            while (interesado[otro] && turno == otro) {
+                interesado[borrachoIndex] = false; // Cede el turno si es del otro
+                while (turno == otro) {
+                    // Espera ocupada hasta que cambie el turno
                 }
+                interesado[borrachoIndex] = true; // Recupera el interés
             }
 
-            // Sección crítica: usar el baño
-            usarBano(2);
 
-            turno = 0; // Da la prioridad al otro borracho
-            interesado[1] = false; // Sale de la sección crítica
+            // Sección crítica
+            usarBano(borrachoIndex + 1);
+
+            turno = otro; // Cede la prioridad
+            interesado[borrachoIndex] = false; // Sale de la sección crítica
         }
     }
 
     // Simulación de uso del baño
-    public void usarBano(int borrachoId) {
+    private void usarBano(int borrachoId) {
         System.out.println("Borracho " + borrachoId + " está usando el baño.");
         try {
-            Thread.sleep(1000); // Simula el uso del baño
+            Thread.sleep(1000); // Simula el tiempo en el baño
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            Thread.currentThread().interrupt();
         }
         System.out.println("Borracho " + borrachoId + " ha terminado de usar el baño.");
+    }
+
+    public static void main(String[] args) {
+        Thread borracho1 = new Thread(new BarDekkerv4(0), "Borracho 1");
+        Thread borracho2 = new Thread(new BarDekkerv4(1), "Borracho 2");
+
+        borracho1.start();
+        borracho2.start();
     }
 }
