@@ -1,83 +1,95 @@
-public class BarDekkerv1 implements Runnable {
-    private static volatile boolean[] quiereEntrar = new boolean[2]; // Indica si un borracho quiere entrar
-    private static volatile int turno = 0; // Control de turno
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
-    // Método que se ejecutará en el hilo
-    @Override
-    public void run() {
-        // Determina si este hilo es el borracho 1 o 2
-        if (Thread.currentThread().getName().equals("Borracho 1")) {
-            borracho1();
-        } else {
-            borracho2();
-        }
-    }
+// Clase que representa el baño
+class Banov1 {
+    private final Lock lock = new ReentrantLock();
+    private final Condition puedeEntrar = lock.newCondition();
+    private boolean enUso = false;
+    private int turno = 1; // Controla el turno de los borrachos
 
-    // Borracho 1 quiere usar el baño
-    public void borracho1() {
-        while (true) {
-            quiereEntrar[0] = true; // Borracho 1 quiere entrar
-            while (quiereEntrar[1]) { // Si el borracho 2 también quiere entrar
-                if (turno == 1) { // Si es el turno del borracho 2
-                    quiereEntrar[0] = false; // No puede entrar
-                    while (turno == 1) { // Espera hasta que el borracho 2 termine
-                    }
-                    quiereEntrar[0] = true; // Vuelve a querer entrar
-                }
-            }
-
-            // Sección crítica: usar el baño
-            usarBano(1);
-
-            // Cede el turno al borracho 2
-            turno = 1;
-            quiereEntrar[0] = false; // Ya no quiere entrar
-        }
-    }
-
-    // Borracho 2 quiere usar el baño
-    public void borracho2() {
-        while (true) {
-            quiereEntrar[1] = true; // Borracho 2 quiere entrar
-            while (quiereEntrar[0]) { // Si el borracho 1 también quiere entrar
-                if (turno == 0) { // Si es el turno del borracho 1
-                    quiereEntrar[1] = false; // No puede entrar
-                    while (turno == 0) { // Espera hasta que el borracho 1 termine
-                    }
-                    quiereEntrar[1] = true; // Vuelve a querer entrar
-                }
-            }
-
-            // Sección crítica: usar el baño
-            usarBano(2);
-
-            // Cede el turno al borracho 1
-            turno = 0;
-            quiereEntrar[1] = false; // Ya no quiere entrar
-        }
-    }
-
-    // Simulación de uso del baño
-    public void usarBano(int borrachoId) {
-        System.out.println("Borracho " + borrachoId + " está usando el baño.");
+    public void usar(int borrachoId) throws InterruptedException {
+        lock.lock();
         try {
-            Thread.sleep(1000); // Simula el uso del baño
+            while (enUso || turno != borrachoId) {
+                System.out.println("Borracho " + borrachoId + " esperando para usar el baño.");
+                puedeEntrar.await();
+            }
+
+            enUso = true; // Borracho entra al baño
+            System.out.println("Borracho " + borrachoId + " está usando el baño.");
+            Thread.sleep(2000); // Simula tiempo usando el baño
+
+        } finally {
+            enUso = false; // Libera el baño
+            System.out.println("Borracho " + borrachoId + " ha salido del baño.");
+
+            // Alterna el turno después de usar el baño
+            turno = (borrachoId == 1) ? 2 : 1;
+            puedeEntrar.signalAll(); // Notifica a todos
+            lock.unlock();
+        }
+    }
+
+}
+
+// Clase que representa el bar
+class Barv1 {
+    private final Banov1 bano; // Referencia al baño
+
+    public Barv1(Banov1 bano) {
+        this.bano = bano; // Inicializa el baño
+    }
+
+    public void tomar(int borrachoId) {
+        System.out.println("Borracho " + borrachoId + " está tomando.");
+        try {
+            Thread.sleep(1000); // Simula el tiempo tomando
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    public void usarBano(int borrachoId) {
+        try {
+            bano.usar(borrachoId); // Llama al método usar del baño
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        System.out.println("Borracho " + borrachoId + " ha terminado de usar el baño.");
+    }
+}
+
+// Clase que representa a un borracho
+class Borrachitov1 extends Thread {
+    private final Barv1 bar; // Referencia al bar
+    private final int id; // Identificador del borracho
+
+    public Borrachitov1(Barv1 bar, int id) {
+        this.bar = bar;
+        this.id = id;
     }
 
-    // Main para iniciar los hilos de los borrachos
+    @Override
+    public void run() {
+        while (true) {
+            bar.tomar(id); // Borracho toma
+            bar.usarBano(id); // Borracho intenta usar el baño
+        }
+    }
+}
+
+// Clase principal para ejecutar el programa
+public class BarDekkerv1 {
     public static void main(String[] args) {
-        BarDekkerv1 bar = new BarDekkerv1();
+        Bano bano = new Bano(); // Crear el baño
+        Bar bar = new Bar(bano); // Crear el bar con el baño
 
-        // Crear y ejecutar los hilos para los dos borrachos
-        Thread borracho1Thread = new Thread(bar, "Borracho 1");
-        Thread borracho2Thread = new Thread(bar, "Borracho 2");
+        // Crear e iniciar dos borrachos
+        Borrachito borrachito1 = new Borrachito(bar, 1);
+        Borrachito borrachito2 = new Borrachito(bar, 2);
 
-        // Iniciar los hilos
-        borracho1Thread.start();
-        borracho2Thread.start();
+        borrachito1.start(); // Iniciar el hilo del primer borracho
+        borrachito2.start(); // Iniciar el hilo del segundo borracho
     }
 }
