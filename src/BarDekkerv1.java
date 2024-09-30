@@ -21,7 +21,7 @@ public class BarDekkerv1 implements Runnable {
                 if (turno == 1) {
                     interesado[0] = false; // Cede su interés
                     while (turno == 1) {
-                        Thread.yield(); // Espera activa
+                         // Espera activa
                     }
                     interesado[0] = true; // Muestra interés nuevamente
                 }
@@ -45,7 +45,7 @@ public class BarDekkerv1 implements Runnable {
                 if (turno == 0) {
                     interesado[1] = false; // Cede su interés
                     while (turno == 0) {
-                        Thread.yield(); // Espera activa
+                        // Espera activa
                     }
                     interesado[1] = true; // Muestra interés nuevamente
                 }

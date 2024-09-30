@@ -1,92 +1,67 @@
-class Dekker {
-    private boolean[] flag = new boolean[5]; // Bandera para cada hilo (turista)
-    private int turno = 0; // Indica a qué turista le toca usar la lancha
+class Turista implements Runnable {
+    private static final int MAX_TRANSPORTES = 4; // Total de transportes por turista
+    private static final int NUM_TURISTAS = 5; // Número total de turistas
+    private static final boolean[] flag = new boolean[NUM_TURISTAS]; // Banderas para cada turista
+    private static int turn = 0; // Indica quién tiene el turno
+    private final int id; // Identificador del turista
+    private int transportesRestantes; // Contador de transportes restantes
 
-    public synchronized void enter(int i) {
-        flag[i] = true; // El turista 'i' quiere subir a la lancha
-        while (turno != i) { // Solo puede entrar si es su turno
-            boolean someoneElseWants = false; // Variable para verificar si otro hilo quiere entrar
-            for (int j = 0; j < 5; j++) {
-                if (flag[j] && j != i) { // Si hay otro turista que quiere entrar
-                    someoneElseWants = true; // Se establece a true si otro quiere entrar
-                    break;
-                }
-            }
-            if (someoneElseWants) {
-                flag[i] = false; // Dejar de querer entrar
-                while (turno != i) {
-                    try {
-                        wait(); // Espera hasta que sea su turno
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
-                }
-                flag[i] = true; // Volver a querer entrar
-            }
-        }
-    }
-
-    public synchronized void exit(int i) {
-        flag[i] = false; // El turista ha dejado de querer usar la lancha
-        turno = (turno + 1) % 5; // Asigna el turno al siguiente turista
-        notifyAll(); // Notifica a todos los turistas que pueden intentar usar la lancha
-    }
-}
-
-class Turista extends Thread {
-    private int id;
-    private Dekker dekker;
-    private int transportes = 4; // Cada turista tiene derecho a 4 transportes
-
-    public Turista(int id, Dekker dekker) {
+    public Turista(int id) {
         this.id = id;
-        this.dekker = dekker;
+        this.transportesRestantes = MAX_TRANSPORTES;
     }
 
     @Override
     public void run() {
-        while (transportes > 0) {
-            dekker.enter(id); // Intentar entrar en la sección crítica
+        while (transportesRestantes > 0) {
+            intentarSubirALaLancha();
+        }
+        System.out.println("Turista " + (id + 1) + " ha terminado su día de paseo.");
+    }
 
-            // Sección crítica: uso de la lancha
-            System.out.println("Turista " + id + " subió a la lancha. Transportes restantes: " + (transportes - 1));
-            transportes--;
+    private void intentarSubirALaLancha() {
+        flag[id] = true; // Indica interés en acceder a la sección crítica
 
-            dekker.exit(id); // Salir de la sección crítica
+        // Espera mientras otro turista está en la sección crítica y es su turno
+        while (flag[turn] && turn != id) {
+            Thread.yield(); // Cede la CPU a otros hilos
+        }
 
-            // Simular el tiempo del viaje
+        // Sección crítica
+        if (transportesRestantes > 0) {
+            System.out.println("Turista " + (id + 1) + " subiendo a la lancha. Transportes restantes: " + transportesRestantes);
+            transportesRestantes--; // Decrementa el número de transportes restantes
             try {
-                Thread.sleep(1000); // Simula el tiempo de viaje
+                Thread.sleep(1000); // Simula el tiempo del viaje
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
+            System.out.println("Turista " + (id + 1) + " ha llegado a la isla.");
         }
 
-        // Mensaje final cuando el turista ha terminado sus transportes
-        System.out.println("Turista " + id + " ha finalizado sus viajes.");
+        flag[id] = false; // Sale de la sección crítica
+        turn = (id + 1) % NUM_TURISTAS; // Pasa el turno al siguiente turista
     }
 }
 
 public class PaseoLancha {
     public static void main(String[] args) {
-        Dekker dekker = new Dekker();
-        Turista[] turistas = new Turista[5];
+        Thread[] turistas = new Thread[5];
 
-        // Crear hilos para cada turista
-        for (int i = 0; i < 5; i++) {
-            turistas[i] = new Turista(i, dekker);
+        // Crear y empezar los hilos de turistas
+        for (int i = 0; i < turistas.length; i++) {
+            turistas[i] = new Thread(new Turista(i));
             turistas[i].start();
         }
 
-        // Esperar a que todos los turistas terminen
-        for (int i = 0; i < 5; i++) {
+        for (Thread turista : turistas) {
             try {
-                turistas[i].join();
+                turista.join(); // Espera a que todos los turistas terminen
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
         }
 
-        System.out.println("Todos los turistas han finalizado sus viajes.");
+        System.out.println("Todos los turistas han terminado su día de paseo.");
     }
 }
